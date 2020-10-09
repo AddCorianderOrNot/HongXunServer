@@ -12,14 +12,12 @@ import (
 
 type MessageService interface {
 	SaveMessage(message models.Message) error
-	LoadMessage() (models.Message, error)
+	LoadMessage() ([]*models.Message, error)
 }
 
 type messageService struct {
 	C *mongo.Collection
 }
-
-var _ MessageService = (*messageService)(nil)
 
 func NewMessageService(collection *mongo.Collection) MessageService {
 	indexOpt := new(options.IndexOptions)
@@ -53,12 +51,20 @@ func (s *messageService) SaveMessage(message models.Message) error {
 	return err
 }
 
-func (s *messageService) LoadMessage() (models.Message, error) {
+func (s *messageService) LoadMessage() ([]*models.Message, error) {
 	log.Println("LoadMessage")
-	var Message models.Message
-	err := s.C.FindOne(context.TODO(), bson.D{{"isviewed", false}}).Decode(&Message)
+	var Messages []*models.Message
+	findOptions := options.Find().SetLimit(10)
+	cur, err := s.C.Find(context.TODO(), bson.D{{"isviewed", false}}, findOptions)
 	if err != nil {
 		log.Println(err)
 	}
-	return Message, err
+
+	for cur.Next(context.TODO()) {
+		var elem models.Message
+		_ = cur.Decode(&elem)
+		Messages = append(Messages, &elem)
+	}
+	cur.Close(context.TODO())
+	return Messages, err
 }
