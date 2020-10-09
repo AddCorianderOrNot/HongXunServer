@@ -1,18 +1,14 @@
 package models
 
-type Message struct {
-	Id         string `json:"id"`
-	CreateTime string `json:"create_time"`
-	UserFrom   string `json:"user_from"`
-	UserTo     string `json:"user_to"`
-	Content    string `json:"content"`
-	IsViewed   bool   `json:"is_viewed"`
-}
+import (
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
-type User struct {
-	Id        int
-	Email     string
-	Password  string
-	Icon      string
-	Signature string
+type Message struct {
+	Id         primitive.ObjectID `json:"_id" bson:"_id"`
+	CreateTime int                `json:"create_time" bson:"create_time"`
+	UserFrom   string             `json:"user_from" bson:"user_from"`
+	UserTo     string             `json:"user_to" bson:"user_to"`
+	Content    string             `json:"content" bson:"content"`
+	IsViewed   bool               `json:"is_viewed" bson:"is_viewed"`
 }
