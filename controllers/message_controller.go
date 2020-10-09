@@ -13,7 +13,7 @@ type MessageController struct {
 }
 
 func (c *MessageController) Get() {
-	m, err := c.Service.LoadMessage()
+	m, err := c.Service.LoadMessage(c.Ctx.URLParam("user_to"), c.Ctx.URLParam("user_from"))
 	if err != nil {
 		c.Ctx.NotFound()
 		return

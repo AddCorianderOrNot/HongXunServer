@@ -13,7 +13,7 @@ import (
 
 type MessageService interface {
 	SaveMessage(message models.Message) error
-	LoadMessage() ([]*models.Message, error)
+	LoadMessage(userTo, userFrom string) ([]*models.Message, error)
 }
 
 type messageService struct {
@@ -58,11 +58,15 @@ func (s *messageService) SaveMessage(message models.Message) error {
 	return err
 }
 
-func (s *messageService) LoadMessage() ([]*models.Message, error) {
-	log.Println("LoadMessage")
+func (s *messageService) LoadMessage(userTo, userFrom string) ([]*models.Message, error) {
+	log.Println("LoadMessage", userTo, userFrom)
 	var Messages []*models.Message
 	findOptions := options.Find().SetLimit(10)
-	cur, err := s.C.Find(context.TODO(), bson.D{{"is_viewed", false}}, findOptions)
+	cur, err := s.C.Find(context.TODO(), bson.D{
+		{"is_viewed", false},
+		{"user_to", userTo},
+		{"user_from", userFrom},
+	}, findOptions)
 	if err != nil {
 		log.Println(err)
 	}
