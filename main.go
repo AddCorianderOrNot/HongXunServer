@@ -24,11 +24,13 @@ func main() {
 	}
 	defer client.Disconnect(context.TODO())
 
-	db := client.Database("message")
+	db := client.Database("hungxun")
 
 	var (
 		messagesCollection = db.Collection("messages")
 		messageService     = services.NewMessageService(messagesCollection)
+		userCollection     = db.Collection("user")
+		userService        = services.NewUserService(userCollection)
 	)
 
 	app := iris.New()
@@ -37,6 +39,11 @@ func main() {
 	message := mvc.New(app.Party("/message"))
 	message.Register(messageService)
 	message.Handle(new(controllers.MessageController))
+
+	user := mvc.New(app.Party("/user"))
+	user.Register(userService)
+	user.Handle(new(controllers.UserController))
+
 	app.Run(
 		// Start the web server at localhost:8080
 		iris.Addr("localhost:8080"),
