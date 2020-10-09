@@ -3,6 +3,7 @@ package services
 import (
 	"HongXunServer/models"
 	"context"
+	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,6 +14,8 @@ import (
 
 type UserService interface {
 	Register(user models.User) error
+	Verify(authentication models.Authentication) bool
+	isExist(email string) (bool, models.User)
 }
 
 type userService struct {
@@ -40,18 +43,39 @@ func NewUserService(collection *mongo.Collection) UserService {
 	return &userService{C: collection}
 }
 
+func (s *userService) isExist(email string) (bool, models.User) {
+	var user models.User
+	err := s.C.FindOne(context.TODO(), bson.D{{"email", email}}).Decode(&user)
+	if err == nil {
+		return true, user
+	} else {
+		return false, user
+	}
+}
+
 func (s *userService) Register(user models.User) error {
 	log.Println("Register")
-	err := s.C.FindOne(context.TODO(), bson.D{{"email", user.Email}}).Decode(&models.User{})
-	if err == nil {
-		return err
+	exist, _ := s.isExist(user.Email)
+	if exist {
+		return errors.New("用户已存在")
 	}
+
 	if user.Id.IsZero() {
 		user.Id = primitive.NewObjectID()
 	}
-	_, err = s.C.InsertOne(context.TODO(), user)
+	_, err := s.C.InsertOne(context.TODO(), user)
 	if err != nil {
 		log.Println(err)
 	}
 	return err
+}
+
+func (s *userService) Verify(authentication models.Authentication) bool {
+	exist, user := s.isExist(authentication.Email)
+	if exist && authentication.Password == user.Password {
+		return true
+	} else {
+		return false
+	}
+
 }
