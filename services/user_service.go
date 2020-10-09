@@ -3,7 +3,6 @@ package services
 import (
 	"HongXunServer/models"
 	"context"
-	"errors"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -13,7 +12,7 @@ import (
 )
 
 type UserService interface {
-	Register(user models.User) error
+	Register(user models.User) bool
 	Verify(authentication models.Authentication) bool
 	isExist(email string) (bool, models.User)
 }
@@ -26,7 +25,7 @@ func NewUserService(collection *mongo.Collection) UserService {
 	log.Println("NewUserService")
 	indexOpt := new(options.IndexOptions)
 	indexOpt.SetName("userIndex").
-		SetUnique(true).
+		SetUnique(false).
 		SetBackground(true).
 		SetSparse(true)
 	_, err := collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
@@ -44,8 +43,10 @@ func NewUserService(collection *mongo.Collection) UserService {
 }
 
 func (s *userService) isExist(email string) (bool, models.User) {
+	log.Println("Find:", email)
 	var user models.User
 	err := s.C.FindOne(context.TODO(), bson.D{{"email", email}}).Decode(&user)
+	log.Println(user, err)
 	if err == nil {
 		return true, user
 	} else {
@@ -53,29 +54,30 @@ func (s *userService) isExist(email string) (bool, models.User) {
 	}
 }
 
-func (s *userService) Register(user models.User) error {
+func (s *userService) Register(user models.User) bool {
 	log.Println("Register")
 	exist, _ := s.isExist(user.Email)
+	log.Println(exist)
 	if exist {
-		return errors.New("用户已存在")
+		return false
 	}
-
 	if user.Id.IsZero() {
 		user.Id = primitive.NewObjectID()
 	}
+	log.Println("Insert:", user)
 	_, err := s.C.InsertOne(context.TODO(), user)
 	if err != nil {
 		log.Println(err)
 	}
-	return err
+	return true
 }
 
 func (s *userService) Verify(authentication models.Authentication) bool {
 	exist, user := s.isExist(authentication.Email)
+	log.Println(exist, user)
 	if exist && authentication.Password == user.Password {
 		return true
 	} else {
 		return false
 	}
-
 }
