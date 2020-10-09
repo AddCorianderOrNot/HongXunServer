@@ -34,7 +34,7 @@ func main() {
 	app := iris.New()
 	app.Logger().SetLevel("debug")
 
-	message := mvc.New(app.Party("/chat"))
+	message := mvc.New(app.Party("/message"))
 	message.Register(messageService)
 	message.Handle(new(controllers.MessageController))
 	app.Run(
