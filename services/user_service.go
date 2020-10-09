@@ -4,6 +4,7 @@ import (
 	"HongXunServer/models"
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/bsonx"
@@ -41,12 +42,16 @@ func NewUserService(collection *mongo.Collection) UserService {
 
 func (s *userService) Register(user models.User) error {
 	log.Println("Register")
-	result := s.C.FindOne(context.TODO(), bson.D{{"is_viewed", false}})
-	log.Println(result)
-	insertResult, err := s.C.InsertOne(context.TODO(), user)
+	err := s.C.FindOne(context.TODO(), bson.D{{"email", user.Email}}).Decode(&models.User{})
+	if err == nil {
+		return err
+	}
+	if user.Id.IsZero() {
+		user.Id = primitive.NewObjectID()
+	}
+	_, err = s.C.InsertOne(context.TODO(), user)
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("Register a single user: ", insertResult.InsertedID)
 	return err
 }
