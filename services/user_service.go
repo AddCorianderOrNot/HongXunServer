@@ -11,8 +11,17 @@ import (
 	"log"
 )
 
+const (
+	SuccessCode = 0
+	SuccessMsg  = "登入成功"
+	ExistCode   = 1
+	ExistMsg    = "用户已存在"
+	ErrorCode   = 2
+	ErrorMsg    = "未知错误"
+)
+
 type UserService interface {
-	Register(user models.User) bool
+	Register(user models.User) models.Response
 	Verify(authentication models.Authentication) bool
 	isExist(email string) (bool, models.User)
 }
@@ -54,12 +63,16 @@ func (s *userService) isExist(email string) (bool, models.User) {
 	}
 }
 
-func (s *userService) Register(user models.User) bool {
+func (s *userService) Register(user models.User) models.Response {
 	log.Println("Register")
 	exist, _ := s.isExist(user.Email)
 	log.Println(exist)
 	if exist {
-		return false
+		return models.Response{
+			ErrCode: ExistCode,
+			ErrMsg:  ExistMsg,
+			Data:    nil,
+		}
 	}
 	if user.Id.IsZero() {
 		user.Id = primitive.NewObjectID()
@@ -68,8 +81,17 @@ func (s *userService) Register(user models.User) bool {
 	_, err := s.C.InsertOne(context.TODO(), user)
 	if err != nil {
 		log.Println(err)
+		return models.Response{
+			ErrCode: ErrorCode,
+			ErrMsg:  ErrorMsg,
+			Data:    nil,
+		}
 	}
-	return true
+	return models.Response{
+		ErrCode: SuccessCode,
+		ErrMsg:  SuccessMsg,
+		Data:    nil,
+	}
 }
 
 func (s *userService) Verify(authentication models.Authentication) bool {

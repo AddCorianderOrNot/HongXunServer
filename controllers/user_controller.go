@@ -18,6 +18,5 @@ func (c *UserController) Post() {
 	if err != nil {
 		log.Println(err)
 	}
-	success := c.Service.Register(user)
-	c.Ctx.JSON(iris.Map{"is_success": success})
+	_, err = c.Ctx.JSON(c.Service.Register(user))
 }

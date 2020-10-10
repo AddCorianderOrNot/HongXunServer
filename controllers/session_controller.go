@@ -36,8 +36,8 @@ func (c *SessionController) Post() {
 			email: authentication.Email,
 		}
 		accessToken, _ := j.Token(claims)
-		c.Ctx.JSON(iris.Map{"is_success": true, "token": accessToken})
+		_, err = c.Ctx.JSON(iris.Map{"is_success": true, "token": accessToken})
 	} else {
-		c.Ctx.JSON(iris.Map{"is_success": false, "token": nil})
+		_, err = c.Ctx.JSON(iris.Map{"is_success": false, "token": nil})
 	}
 }
