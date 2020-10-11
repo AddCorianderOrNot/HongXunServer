@@ -114,7 +114,7 @@ func (s *userService) Verify(authentication models.Authentication) models.Respon
 					Issuer:   "an-issuer",
 					Audience: jwt.Audience{"an-audience"},
 				}),
-				Email: authentication.Email,
+				UserId: user.Id,
 			}
 			accessToken, _ := j.Token(claims)
 			user.Token = accessToken

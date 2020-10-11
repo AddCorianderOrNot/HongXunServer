@@ -9,11 +9,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"log"
+	"time"
 )
 
 type MessageService interface {
 	SaveMessage(message models.Message) error
-	LoadMessage(userTo, userFrom string) ([]*models.Message, error)
+	LoadMessage(userTo, userFrom primitive.ObjectID) ([]*models.Message, error)
 }
 
 type messageService struct {
@@ -49,6 +50,7 @@ func (s *messageService) SaveMessage(message models.Message) error {
 	if message.Id.IsZero() {
 		message.Id = primitive.NewObjectID()
 	}
+	message.CreateTime = time.Now()
 	message.IsViewed = false
 	log.Println("SaveMessage", message)
 	_, err := s.C.InsertOne(context.TODO(), message)
@@ -58,7 +60,7 @@ func (s *messageService) SaveMessage(message models.Message) error {
 	return err
 }
 
-func (s *messageService) LoadMessage(userTo, userFrom string) ([]*models.Message, error) {
+func (s *messageService) LoadMessage(userTo, userFrom primitive.ObjectID) ([]*models.Message, error) {
 	log.Println("LoadMessage", userTo, userFrom)
 	var Messages []*models.Message
 	findOptions := options.Find().SetLimit(10)
