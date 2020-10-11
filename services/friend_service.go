@@ -49,6 +49,8 @@ func NewFriendService(collection *mongo.Collection) FriendService {
 }
 
 func (s *friendService) AddFriend(ownerId, friendId primitive.ObjectID) models.Response {
+	log.Println("AddFriend:", friendId)
+
 	if ownerId == friendId {
 		return models.Response{
 			ErrCode: addSelfCode,

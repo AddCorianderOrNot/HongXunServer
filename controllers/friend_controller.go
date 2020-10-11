@@ -5,29 +5,27 @@ import (
 	"HongXunServer/services"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 )
 
-type MessageController struct {
+type FriendController struct {
 	Ctx     iris.Context
-	Service services.MessageService
+	Service services.FriendService
 }
 
-func (c *MessageController) Get() {
+func (c *FriendController) Get() {
 	var claims models.UserClaims
 	err := jwt.ReadClaims(c.Ctx, &claims)
 	if err != nil {
 		log.Println(err)
 	}
-	userFrom, _ := primitive.ObjectIDFromHex(c.Ctx.URLParam("user_from"))
-	_, err = c.Ctx.JSON(c.Service.LoadMessage(claims.UserId, userFrom))
+	_, err = c.Ctx.JSON(c.Service.LoadFriend(claims.UserId))
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func (c *MessageController) Post() {
+func (c *FriendController) Post() {
 	var claims models.UserClaims
 	err := jwt.ReadClaims(c.Ctx, &claims)
 	if err != nil {
@@ -35,13 +33,13 @@ func (c *MessageController) Post() {
 	}
 	log.Println("user from:", claims.UserId)
 
-	var message models.Message
-	message.UserFrom = claims.UserId
-	err = c.Ctx.ReadJSON(&message)
+	var friend models.Friend
+	err = c.Ctx.ReadJSON(&friend)
 	if err != nil {
 		log.Println(err)
 	}
-	_, err = c.Ctx.JSON(c.Service.SaveMessage(message))
+
+	_, err = c.Ctx.JSON(c.Service.AddFriend(claims.UserId, friend.FriendId))
 	if err != nil {
 		log.Println(err)
 	}
