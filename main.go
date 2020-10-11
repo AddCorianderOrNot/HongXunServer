@@ -36,9 +36,11 @@ func main() {
 		userService        = services.NewUserService(userCollection)
 	)
 
+	verify := jwt.HMAC(15*time.Minute, "secret", "itsa16bytesecret").Verify
+
 	message := mvc.New(app.Party("/message"))
 	message.Register(messageService)
-	message.Router.Use(jwt.HMAC(15*time.Minute, "secret", "itsa16bytesecret").Verify)
+	message.Router.Use(verify)
 	message.Handle(new(controllers.MessageController))
 
 	user := mvc.New(app.Party("/user"))

@@ -8,6 +8,7 @@ type User struct {
 	Email     string             `json:"email"`
 	Password  string             `json:"password"`
 	Icon      string             `json:"icon"`
+	Token     string             `json:"token"`
 	Signature string             `json:"signature"`
 }
 

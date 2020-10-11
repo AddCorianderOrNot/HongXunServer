@@ -3,26 +3,34 @@ package services
 import (
 	"HongXunServer/models"
 	"context"
+	"github.com/kataras/iris/v12/middleware/jwt"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"log"
+	"time"
 )
 
 const (
-	SuccessCode = 0
-	SuccessMsg  = "登入成功"
-	ExistCode   = 1
-	ExistMsg    = "用户已存在"
-	ErrorCode   = 2
-	ErrorMsg    = "未知错误"
+	RegisterSuccessCode = 0
+	RegisterSuccessMsg  = "注册成功"
+	RegisterExistCode   = 1
+	RegisterExistMsg    = "用户已存在"
+	RegisterErrorCode   = 2
+	RegisterErrorMsg    = "未知错误"
+	VerifySuccessCode   = 0
+	VerifySuccessMsg    = "验证成功"
+	VerifyExistCode     = 1
+	VerifyExistMsg      = "用户不存在"
+	VerifyErrorCode     = 2
+	VerifyErrorMsg      = "验证失败"
 )
 
 type UserService interface {
 	Register(user models.User) models.Response
-	Verify(authentication models.Authentication) bool
+	Verify(authentication models.Authentication) models.Response
 	isExist(email string) (bool, models.User)
 }
 
@@ -69,8 +77,8 @@ func (s *userService) Register(user models.User) models.Response {
 	log.Println(exist)
 	if exist {
 		return models.Response{
-			ErrCode: ExistCode,
-			ErrMsg:  ExistMsg,
+			ErrCode: RegisterExistCode,
+			ErrMsg:  RegisterExistMsg,
 			Data:    nil,
 		}
 	}
@@ -82,24 +90,51 @@ func (s *userService) Register(user models.User) models.Response {
 	if err != nil {
 		log.Println(err)
 		return models.Response{
-			ErrCode: ErrorCode,
-			ErrMsg:  ErrorMsg,
+			ErrCode: RegisterErrorCode,
+			ErrMsg:  RegisterErrorMsg,
 			Data:    nil,
 		}
 	}
 	return models.Response{
-		ErrCode: SuccessCode,
-		ErrMsg:  SuccessMsg,
+		ErrCode: RegisterSuccessCode,
+		ErrMsg:  RegisterSuccessMsg,
 		Data:    nil,
 	}
 }
 
-func (s *userService) Verify(authentication models.Authentication) bool {
+func (s *userService) Verify(authentication models.Authentication) models.Response {
 	exist, user := s.isExist(authentication.Email)
 	log.Println(exist, user)
-	if exist && authentication.Password == user.Password {
-		return true
+	if exist {
+		if authentication.Password == user.Password {
+			log.Println("密码正确")
+			j := jwt.HMAC(15*time.Minute, "secret", "itsa16bytesecret")
+			claims := models.UserClaims{
+				Claims: j.Expiry(jwt.Claims{
+					Issuer:   "an-issuer",
+					Audience: jwt.Audience{"an-audience"},
+				}),
+				Email: authentication.Email,
+			}
+			accessToken, _ := j.Token(claims)
+			user.Token = accessToken
+			return models.Response{
+				ErrCode: VerifySuccessCode,
+				ErrMsg:  VerifySuccessMsg,
+				Data:    user,
+			}
+		} else {
+			log.Println("密码错误")
+			return models.Response{
+				ErrCode: VerifyErrorCode,
+				ErrMsg:  VerifyErrorMsg,
+			}
+		}
 	} else {
-		return false
+		log.Println("用户不存在")
+		return models.Response{
+			ErrCode: VerifyExistCode,
+			ErrMsg:  VerifyExistMsg,
+		}
 	}
 }
