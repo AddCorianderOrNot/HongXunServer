@@ -13,8 +13,8 @@ import (
 )
 
 type MessageService interface {
-	SaveMessage(message models.Message) error
-	LoadMessage(userTo, userFrom primitive.ObjectID) ([]*models.Message, error)
+	SaveMessage(message models.Message) models.Response
+	LoadMessage(userTo, userFrom primitive.ObjectID) models.Response
 }
 
 type messageService struct {
@@ -29,10 +29,7 @@ func NewMessageService(collection *mongo.Collection) MessageService {
 		SetBackground(true).
 		SetSparse(true)
 	_, err := collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys: bsonx.Doc{{
-			Key:   "user_to",
-			Value: bsonx.String("text"),
-		}},
+		Keys:    bsonx.Doc{{"user_to", bsonx.Int32(1)}, {"user_from", bsonx.Int32(1)}},
 		Options: indexOpt,
 	})
 	if err != nil {
@@ -46,7 +43,7 @@ func NewMessageService(collection *mongo.Collection) MessageService {
 //	collection.Find()
 //}
 
-func (s *messageService) SaveMessage(message models.Message) error {
+func (s *messageService) SaveMessage(message models.Message) models.Response {
 	if message.Id.IsZero() {
 		message.Id = primitive.NewObjectID()
 	}
@@ -57,12 +54,16 @@ func (s *messageService) SaveMessage(message models.Message) error {
 	if err != nil {
 		log.Println(err)
 	}
-	return err
+	return models.Response{
+		ErrCode: 0,
+		ErrMsg:  "发送消息成功",
+		Data:    nil,
+	}
 }
 
-func (s *messageService) LoadMessage(userTo, userFrom primitive.ObjectID) ([]*models.Message, error) {
+func (s *messageService) LoadMessage(userTo, userFrom primitive.ObjectID) models.Response {
 	log.Println("LoadMessage", userTo, userFrom)
-	var Messages []*models.Message
+	var messages []*models.Message
 	findOptions := options.Find().SetLimit(10)
 	cur, err := s.C.Find(context.TODO(), bson.D{
 		{"is_viewed", false},
@@ -76,8 +77,12 @@ func (s *messageService) LoadMessage(userTo, userFrom primitive.ObjectID) ([]*mo
 	for cur.Next(context.TODO()) {
 		var elem models.Message
 		_ = cur.Decode(&elem)
-		Messages = append(Messages, &elem)
+		messages = append(messages, &elem)
 	}
-	cur.Close(context.TODO())
-	return Messages, err
+	err = cur.Close(context.TODO())
+	return models.Response{
+		ErrCode: 0,
+		ErrMsg:  "加载消息成功",
+		Data:    messages,
+	}
 }

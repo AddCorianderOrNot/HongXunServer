@@ -17,14 +17,12 @@ type MessageController struct {
 func (c *MessageController) Get() {
 	var claims models.UserClaims
 	err := jwt.ReadClaims(c.Ctx, &claims)
-	userFrom, _ := primitive.ObjectIDFromHex(c.Ctx.URLParam("user_from"))
-	m, err := c.Service.LoadMessage(claims.UserId, userFrom)
 	if err != nil {
 		c.Ctx.NotFound()
 		return
 	}
-	_, err = c.Ctx.JSON(m)
-
+	userFrom, _ := primitive.ObjectIDFromHex(c.Ctx.URLParam("user_from"))
+	_, err = c.Ctx.JSON(c.Service.LoadMessage(claims.UserId, userFrom))
 	if err != nil {
 		log.Println(err)
 	}
@@ -43,16 +41,8 @@ func (c *MessageController) Post() {
 	}
 	log.Println("user from:", claims.UserId)
 	message.UserFrom = claims.UserId
+	_, err = c.Ctx.JSON(c.Service.SaveMessage(message))
 	if err != nil {
 		log.Println(err)
-		c.Ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem())
-		return
 	}
-	err = c.Service.SaveMessage(message)
-	if err != nil {
-		log.Println(err)
-		c.Ctx.StopWithProblem(iris.StatusBadRequest, iris.NewProblem())
-		return
-	}
-	c.Ctx.JSON(iris.Map{"is_success": true})
 }
