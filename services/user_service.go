@@ -14,18 +14,18 @@ import (
 )
 
 const (
-	RegisterSuccessCode = 0
-	RegisterSuccessMsg  = "注册成功"
-	RegisterExistCode   = 1
-	RegisterExistMsg    = "用户已存在"
-	RegisterErrorCode   = 2
-	RegisterErrorMsg    = "未知错误"
-	VerifySuccessCode   = 0
-	VerifySuccessMsg    = "验证成功"
-	VerifyExistCode     = 1
-	VerifyExistMsg      = "用户不存在"
-	VerifyErrorCode     = 2
-	VerifyErrorMsg      = "验证失败"
+	registerSuccessCode = 0
+	registerSuccessMsg  = "注册成功"
+	registerExistCode   = 1
+	registerExistMsg    = "用户已存在"
+	registerErrorCode   = 2
+	registerErrorMsg    = "未知错误"
+	verifySuccessCode   = 0
+	verifySuccessMsg    = "验证成功"
+	verifyExistCode     = 1
+	verifyExistMsg      = "用户不存在"
+	verifyErrorCode     = 2
+	verifyErrorMsg      = "验证失败"
 )
 
 type UserService interface {
@@ -46,10 +46,7 @@ func NewUserService(collection *mongo.Collection) UserService {
 		SetBackground(true).
 		SetSparse(true)
 	_, err := collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys: bsonx.Doc{{
-			Key:   "email",
-			Value: bsonx.String("text"),
-		}},
+		Keys:    bsonx.Doc{{"nickname", bsonx.Int32(1)}},
 		Options: indexOpt,
 	})
 	if err != nil {
@@ -77,8 +74,8 @@ func (s *userService) Register(user models.User) models.Response {
 	log.Println(exist)
 	if exist {
 		return models.Response{
-			ErrCode: RegisterExistCode,
-			ErrMsg:  RegisterExistMsg,
+			ErrCode: registerExistCode,
+			ErrMsg:  registerExistMsg,
 			Data:    nil,
 		}
 	}
@@ -90,14 +87,14 @@ func (s *userService) Register(user models.User) models.Response {
 	if err != nil {
 		log.Println(err)
 		return models.Response{
-			ErrCode: RegisterErrorCode,
-			ErrMsg:  RegisterErrorMsg,
+			ErrCode: registerErrorCode,
+			ErrMsg:  registerErrorMsg,
 			Data:    nil,
 		}
 	}
 	return models.Response{
-		ErrCode: RegisterSuccessCode,
-		ErrMsg:  RegisterSuccessMsg,
+		ErrCode: registerSuccessCode,
+		ErrMsg:  registerSuccessMsg,
 		Data:    nil,
 	}
 }
@@ -119,22 +116,22 @@ func (s *userService) Verify(authentication models.Authentication) models.Respon
 			accessToken, _ := j.Token(claims)
 			user.Token = accessToken
 			return models.Response{
-				ErrCode: VerifySuccessCode,
-				ErrMsg:  VerifySuccessMsg,
+				ErrCode: verifySuccessCode,
+				ErrMsg:  verifySuccessMsg,
 				Data:    user,
 			}
 		} else {
 			log.Println("密码错误")
 			return models.Response{
-				ErrCode: VerifyErrorCode,
-				ErrMsg:  VerifyErrorMsg,
+				ErrCode: verifyErrorCode,
+				ErrMsg:  verifyErrorMsg,
 			}
 		}
 	} else {
 		log.Println("用户不存在")
 		return models.Response{
-			ErrCode: VerifyExistCode,
-			ErrMsg:  VerifyExistMsg,
+			ErrCode: verifyExistCode,
+			ErrMsg:  verifyExistMsg,
 		}
 	}
 }
