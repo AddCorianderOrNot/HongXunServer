@@ -18,6 +18,6 @@ func (c *SessionController) Post() {
 	if err != nil {
 		log.Println(err)
 	}
-	response := c.Service.Verify(authentication)
+	response := c.Service.Verify(&authentication)
 	_, err = c.Ctx.JSON(response)
 }

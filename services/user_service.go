@@ -1,16 +1,12 @@
 package services
 
 import (
+	"HongXunServer/middleware"
 	"HongXunServer/models"
-	"context"
+	"HongXunServer/repositories"
 	"github.com/kataras/iris/v12/middleware/jwt"
-	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/bsonx"
 	"log"
-	"time"
 )
 
 const (
@@ -29,37 +25,23 @@ const (
 )
 
 type UserService interface {
-	Register(user models.User) models.Response
-	Verify(authentication models.Authentication) models.Response
-	isExist(email string) (bool, models.User)
+	Register(user *models.User) models.Response
+	Verify(authentication *models.Authentication) models.Response
+	isExist(email string) (bool, *models.User)
 }
 
 type userService struct {
-	C *mongo.Collection
+	r repositories.UserRepository
 }
 
-func NewUserService(collection *mongo.Collection) UserService {
+func NewUserService(r repositories.UserRepository) UserService {
 	log.Println("NewUserService")
-	indexOpt := new(options.IndexOptions)
-	indexOpt.SetName("userIndex").
-		SetUnique(false).
-		SetBackground(true).
-		SetSparse(true)
-	_, err := collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys:    bsonx.Doc{{"nickname", bsonx.Int32(1)}},
-		Options: indexOpt,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	return &userService{C: collection}
+	return &userService{r: r}
 }
 
-func (s *userService) isExist(email string) (bool, models.User) {
+func (s *userService) isExist(email string) (bool, *models.User) {
 	log.Println("Find:", email)
-	var user models.User
-	err := s.C.FindOne(context.TODO(), bson.D{{"email", email}}).Decode(&user)
+	user, err := s.r.FindByEmail(email)
 	log.Println(user, err)
 	if err == nil {
 		return true, user
@@ -68,7 +50,7 @@ func (s *userService) isExist(email string) (bool, models.User) {
 	}
 }
 
-func (s *userService) Register(user models.User) models.Response {
+func (s *userService) Register(user *models.User) models.Response {
 	log.Println("Register")
 	exist, _ := s.isExist(user.Email)
 	log.Println(exist)
@@ -82,8 +64,8 @@ func (s *userService) Register(user models.User) models.Response {
 	if user.Id.IsZero() {
 		user.Id = primitive.NewObjectID()
 	}
-	log.Println("Insert:", user)
-	_, err := s.C.InsertOne(context.TODO(), user)
+	log.Println("Save:", user)
+	err := s.r.Save(user)
 	if err != nil {
 		log.Println(err)
 		return models.Response{
@@ -99,17 +81,17 @@ func (s *userService) Register(user models.User) models.Response {
 	}
 }
 
-func (s *userService) Verify(authentication models.Authentication) models.Response {
+func (s *userService) Verify(authentication *models.Authentication) models.Response {
 	exist, user := s.isExist(authentication.Email)
 	log.Println(exist, user)
 	if exist {
 		if authentication.Password == user.Password {
+			j := middleware.J
 			log.Println("密码正确")
-			j := jwt.HMAC(15*time.Minute, "secret", "itsa16bytesecret")
 			claims := models.UserClaims{
 				Claims: j.Expiry(jwt.Claims{
-					Issuer:   "an-issuer",
-					Audience: jwt.Audience{"an-audience"},
+					Issuer:   "HongXun",
+					Audience: jwt.Audience{user.Nickname},
 				}),
 				UserId: user.Id,
 			}

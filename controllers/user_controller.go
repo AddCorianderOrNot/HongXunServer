@@ -18,5 +18,5 @@ func (c *UserController) Post() {
 	if err != nil {
 		log.Println(err)
 	}
-	_, err = c.Ctx.JSON(c.Service.Register(user))
+	_, err = c.Ctx.JSON(c.Service.Register(&user))
 }

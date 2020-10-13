@@ -2,12 +2,8 @@ package services
 
 import (
 	"HongXunServer/models"
-	"context"
-	"go.mongodb.org/mongo-driver/bson"
+	"HongXunServer/repositories"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/x/bsonx"
 	"log"
 	"time"
 )
@@ -17,8 +13,8 @@ const (
 	addSuccessMsg  = "添加成功"
 	addSelfCode    = 1
 	addSelfMsg     = "不能添加自己为好友"
-	addErrorCode   = 2
-	addErrorMsg    = "未知错误"
+	addNoFoundCode   = 2
+	addNoFoundMsg    = "好友不存在"
 )
 
 type FriendService interface {
@@ -27,25 +23,8 @@ type FriendService interface {
 }
 
 type friendService struct {
-	C *mongo.Collection
-}
-
-func NewFriendService(collection *mongo.Collection) FriendService {
-	log.Println("NewFriendService")
-	indexOpt := new(options.IndexOptions)
-	indexOpt.SetName("friendIndex").
-		SetUnique(false).
-		SetBackground(true).
-		SetSparse(true)
-	_, err := collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
-		Keys:    bsonx.Doc{{"owner_id", bsonx.Int32(1)}, {"friend_id", bsonx.Int32(1)}},
-		Options: indexOpt,
-	})
-	if err != nil {
-		log.Println(err)
-	}
-
-	return &friendService{C: collection}
+	friendRepository repositories.FriendRepository
+	userRepository   repositories.UserRepository
 }
 
 func (s *friendService) AddFriend(ownerId, friendId primitive.ObjectID) models.Response {
@@ -58,27 +37,30 @@ func (s *friendService) AddFriend(ownerId, friendId primitive.ObjectID) models.R
 			Data:    nil,
 		}
 	}
-	_, err := s.C.InsertOne(context.TODO(), models.Friend{
+
+	_, err := s.userRepository.FindById(friendId)
+	if err != nil {
+		return models.Response{
+			ErrCode: addNoFoundCode,
+			ErrMsg: addNoFoundMsg,
+			Data: nil,
+		}
+	}
+
+	_ = s.friendRepository.Save(&models.Friend{
 		Id:         primitive.NewObjectID(),
 		OwnerId:    ownerId,
 		FriendId:   friendId,
 		CreateTime: time.Now(),
 	})
 
-	_, err = s.C.InsertOne(context.TODO(), models.Friend{
+	_ = s.friendRepository.Save(&models.Friend{
 		Id:         primitive.NewObjectID(),
 		OwnerId:    friendId,
 		FriendId:   ownerId,
 		CreateTime: time.Now(),
 	})
-	if err != nil {
-		log.Println(err)
-		return models.Response{
-			ErrCode: addErrorCode,
-			ErrMsg:  addErrorMsg,
-			Data:    nil,
-		}
-	}
+
 	return models.Response{
 		ErrCode: addSuccessCode,
 		ErrMsg:  addSuccessMsg,
@@ -87,23 +69,26 @@ func (s *friendService) AddFriend(ownerId, friendId primitive.ObjectID) models.R
 }
 
 func (s *friendService) LoadFriend(ownerId primitive.ObjectID) models.Response {
-	var friends []*models.Friend
-	findOptions := options.Find().SetLimit(10)
-	cur, err := s.C.Find(context.TODO(), bson.D{
-		{"owner_id", ownerId},
-	}, findOptions)
-	if err != nil {
-		log.Println(err)
+	friends, _ := s.friendRepository.FindAllByOwnerId(ownerId)
+	var users []*models.UserMini
+	for _, friend := range friends {
+		user, _ := s.userRepository.FindById(friend.FriendId)
+		users = append(users, &models.UserMini{
+			Nickname: user.Nickname,
+			Email: user.Email,
+			Icon: user.Icon,
+			Signature: user.Signature,
+		})
 	}
-	for cur.Next(context.TODO()) {
-		var elem models.Friend
-		_ = cur.Decode(&elem)
-		friends = append(friends, &elem)
-	}
-	err = cur.Close(context.TODO())
+
 	return models.Response{
 		ErrCode: 0,
 		ErrMsg:  "成功",
-		Data:    friends,
+		Data:    users,
 	}
+}
+
+func NewFriendService(rf repositories.FriendRepository, ru repositories.UserRepository) FriendService {
+	log.Println("NewFriendService")
+	return &friendService{friendRepository: rf, userRepository: ru}
 }
