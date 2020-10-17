@@ -33,10 +33,10 @@ func (c *MessageController) Post() {
 	if err != nil {
 		log.Println(err)
 	}
-	log.Println("user from:", claims.UserId)
+	log.Println("user from:", claims.UserEmail)
 
 	var message models.Message
-	message.UserFrom = claims.UserId
+	message.UserFrom = claims.UserEmail
 	err = c.Ctx.ReadJSON(&message)
 	if err != nil {
 		log.Println(err)

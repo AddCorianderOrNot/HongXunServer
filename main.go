@@ -2,6 +2,7 @@ package main
 
 import (
 	"HongXunServer/config"
+	"HongXunServer/controllers"
 	"HongXunServer/datasource"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
@@ -9,7 +10,7 @@ import (
 
 func main() {
 
-	app := iris.New()
+	app := iris.Default()
 	app.Logger().SetLevel("debug")
 
 	datasource.ConnectToDatabase()
@@ -19,7 +20,10 @@ func main() {
 	mvc.Configure(app.Party("/session"), config.SessionConfigure)
 	mvc.Configure(app.Party("/friend"), config.FriendConfigure)
 	mvc.Configure(app.Party("/message"), config.MessageConfigure)
-	mvc.Configure(app.Party("/chat"), config.ChatConfigure)
+
+
+	app.Get("/chat", controllers.Chat)
+	//mvc.Configure(app.Party("/chat"), config.ChatConfigure)
 
 	_ = app.Run(
 		// Start the web server at localhost:8080

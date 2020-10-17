@@ -1,13 +1,14 @@
 package controllers
 
 import (
+	"HongXunServer/middleware"
 	"HongXunServer/models"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/middleware/jwt"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
+	"net/http"
 	"sync"
 )
 
@@ -19,57 +20,71 @@ type Node struct {
 	Conn *websocket.Conn
 	//并行转串行,
 	DataQueue chan []byte
+	UserEmail string
 }
 
 //定义命令行格式
 const (
-	CmdSingleMsg = 10
-	CmdHeart     = 0
+	CmdSingleMsg = 0
+	CmdHeart     = 1
 )
 
 
 
 //后端调度逻辑处理
-func dispatch(data []byte) {
-	msg := models.Message{}
-	err := json.Unmarshal(data, &msg)
+func dispatch(userFrom string,data []byte) {
+	message := models.Message{}
+	err := json.Unmarshal(data, &message)
+	message.UserFrom = userFrom
+	message.UserName = userFrom
+	log.Println(message)
 	if err != nil {
 		log.Println(err.Error())
-		return
 	}
-	switch msg.Type {
+	msg, _ := json.Marshal(message)
+	switch message.Type {
 	case CmdSingleMsg:
-		sendMsg(msg.UserTo, data)
+		sendMsg(message.UserTo, msg)
 	case CmdHeart:
 		//检测客户端的心跳
 	}
 }
 
 //userid和Node映射关系表
-var clientMap map[primitive.ObjectID]*Node = make(map[primitive.ObjectID]*Node, 0)
+var clientMap  = make(map[string]*Node, 0)
 //读写锁
 var rwlocker sync.RWMutex
 //实现聊天的功能
-func (c *ChatController) Get() {
+func Chat(ctx iris.Context) {
 	log.Println("Chat")
 	var	userClaims models.UserClaims
-	_ = jwt.ReadClaims(c.Ctx, &userClaims)
-	userId := userClaims.UserId
-	log.Println("UserId:", userId)
-	conn, err := (&websocket.Upgrader{}).Upgrade(c.Ctx.ResponseWriter(), c.Ctx.Request(), nil)
+	token := jwt.FromQuery(ctx)
+	err := middleware.J.VerifyTokenString(ctx, token, &userClaims)
+	isLegal := true
+	if err != nil {
+		isLegal = false
+		log.Println(err)
+	}
+	userEmail := userClaims.UserEmail
+	log.Println("UserEmail:", userEmail)
+	conn, err := (&websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool {
+			return isLegal
+		}}).Upgrade(ctx.ResponseWriter(), ctx.Request(), nil)
 
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(err)
 		return
 	}
 	//获得websocket链接conn
 	node := &Node{
 		Conn:      conn,
 		DataQueue: make(chan []byte, 50),
+		UserEmail: userEmail,
 	}
 
 	rwlocker.Lock()
-	clientMap[userId] = node
+	clientMap[userEmail] = node
 	log.Println(clientMap)
 	rwlocker.Unlock()
 
@@ -79,7 +94,7 @@ func (c *ChatController) Get() {
 	//开启协程完成接收逻辑
 	go recvproc(node)
 
-	sendMsg(userId, []byte("welcome!"))
+	sendMsg(userEmail, []byte("welcome!"))
 }
 
 //发送逻辑
@@ -104,17 +119,16 @@ func recvproc(node *Node) {
 			log.Println(err.Error())
 			return
 		}
-
-		dispatch(data)
+		dispatch(node.UserEmail, data)
 		//todo对data进一步处理
 		log.Printf("recv<=%s", data)
 	}
 }
 
 //发送消息,发送到消息的管道
-func sendMsg(userId primitive.ObjectID, msg []byte) {
+func sendMsg(UserEmail string, msg []byte) {
 	rwlocker.RLock()
-	node, ok := clientMap[userId]
+	node, ok := clientMap[UserEmail]
 	rwlocker.RUnlock()
 	if ok {
 		node.DataQueue <- msg

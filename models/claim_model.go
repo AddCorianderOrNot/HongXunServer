@@ -8,4 +8,5 @@ import (
 type UserClaims struct {
 	jwt.Claims
 	UserId primitive.ObjectID
+	UserEmail string
 }

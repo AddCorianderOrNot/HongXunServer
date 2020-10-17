@@ -7,10 +7,11 @@ import (
 
 type Message struct {
 	Id         primitive.ObjectID `json:"_id" bson:"_id"`
-	CreateTime time.Time          `json:"create_time" bson:"create_time"`
-	UserFrom   primitive.ObjectID `json:"user_from" bson:"user_from"`
-	UserTo     primitive.ObjectID `json:"user_to" bson:"user_to"`
-	Type       int                `json:"type" bson:"type"`
-	Content    string             `json:"content" bson:"content"`
+	CreateTime time.Time          `json:"dateTime" bson:"create_time"`
+	UserFrom   string 			  `json:"sender" bson:"user_from"`
+	UserName   string 			  `json:"senderName" bson:"user_from"`
+	UserTo     string             `json:"receiver" bson:"user_to"`
+	Type       int                `json:"messageType" bson:"type"`
+	Content    string             `json:"message" bson:"content"`
 	IsViewed   bool               `json:"is_viewed" bson:"is_viewed"`
 }

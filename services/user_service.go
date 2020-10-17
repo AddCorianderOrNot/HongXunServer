@@ -94,6 +94,7 @@ func (s *userService) Verify(authentication *models.Authentication) models.Respo
 					Audience: jwt.Audience{user.Nickname},
 				}),
 				UserId: user.Id,
+				UserEmail: user.Email,
 			}
 			accessToken, _ := j.Token(claims)
 			user.Token = accessToken
