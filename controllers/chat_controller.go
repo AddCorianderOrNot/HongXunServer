@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"HongXunServer/middleware"
 	"HongXunServer/models"
 	"encoding/json"
 	"github.com/gorilla/websocket"
@@ -58,8 +57,9 @@ var rwlocker sync.RWMutex
 func Chat(ctx iris.Context) {
 	log.Println("Chat")
 	var	userClaims models.UserClaims
-	token := jwt.FromQuery(ctx)
-	err := middleware.J.VerifyTokenString(ctx, token, &userClaims)
+	//token := jwt.FromQuery(ctx)
+	//err := middleware.J.VerifyTokenString(ctx, token, &userClaims)
+	err := jwt.ReadClaims(ctx, &userClaims)
 	isLegal := true
 	if err != nil {
 		isLegal = false

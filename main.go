@@ -4,6 +4,7 @@ import (
 	"HongXunServer/config"
 	"HongXunServer/controllers"
 	"HongXunServer/datasource"
+	"HongXunServer/middleware"
 	"github.com/kataras/iris/v12"
 	"github.com/kataras/iris/v12/mvc"
 )
@@ -22,12 +23,12 @@ func main() {
 	mvc.Configure(app.Party("/message"), config.MessageConfigure)
 
 
-	app.Get("/chat", controllers.Chat)
+	app.Get("/chat", middleware.Verify, controllers.Chat)
 	//mvc.Configure(app.Party("/chat"), config.ChatConfigure)
 
 	_ = app.Run(
 		// Start the web server at localhost:8080
-		iris.Addr("localhost:8080"),
+		iris.Addr(":8080"),
 		// skip err server closed when CTRL/CMD+C pressed:
 		iris.WithoutServerError(iris.ErrServerClosed),
 		// enables faster json serialization and more:
