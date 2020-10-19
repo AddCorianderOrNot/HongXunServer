@@ -57,7 +57,7 @@ func (s *messageService) SaveMessage(message models.Message) models.Response {
 	return models.Response{
 		ErrCode: 0,
 		ErrMsg:  "发送消息成功",
-		Data:    nil,
+		Data:    message,
 	}
 }
 
