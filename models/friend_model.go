@@ -12,3 +12,7 @@ type Friend struct {
 	Remarks    string             `json:"remarks" bson:"remarks"`
 	CreateTime time.Time          `json:"create_time" bson:"create_time"`
 }
+
+type FriendEmail struct {
+	Email string `json:"friend_id"`
+}

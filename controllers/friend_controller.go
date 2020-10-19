@@ -33,13 +33,13 @@ func (c *FriendController) Post() {
 	}
 	log.Println("user from:", claims.UserId)
 
-	var friend models.Friend
-	err = c.Ctx.ReadJSON(&friend)
+	var email models.FriendEmail
+	err = c.Ctx.ReadJSON(&email)
 	if err != nil {
 		log.Println(err)
 	}
-
-	_, err = c.Ctx.JSON(c.Service.AddFriend(claims.UserId, friend.FriendId))
+	log.Println("friendEmail:", email.Email)
+	_, err = c.Ctx.JSON(c.Service.AddFriendByEmail(claims.UserId, email.Email))
 	if err != nil {
 		log.Println(err)
 	}

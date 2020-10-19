@@ -13,12 +13,13 @@ const (
 	addSuccessMsg  = "添加成功"
 	addSelfCode    = 1
 	addSelfMsg     = "不能添加自己为好友"
-	addNoFoundCode   = 2
-	addNoFoundMsg    = "好友不存在"
+	addNoFoundCode = 2
+	addNoFoundMsg  = "好友不存在"
 )
 
 type FriendService interface {
 	AddFriend(ownerId, friendId primitive.ObjectID) models.Response
+	AddFriendByEmail(ownerId primitive.ObjectID, friendEmail string) models.Response
 	LoadFriend(ownerId primitive.ObjectID) models.Response
 }
 
@@ -27,9 +28,14 @@ type friendService struct {
 	userRepository   repositories.UserRepository
 }
 
+func (s *friendService) AddFriendByEmail(ownerId primitive.ObjectID, friendEmail string) models.Response {
+	log.Println("AddFriendByEmail")
+	friend, _ := s.userRepository.FindByEmail(friendEmail)
+	return s.AddFriend(ownerId, friend.Id)
+}
+
 func (s *friendService) AddFriend(ownerId, friendId primitive.ObjectID) models.Response {
 	log.Println("AddFriend:", friendId)
-
 	if ownerId == friendId {
 		return models.Response{
 			ErrCode: addSelfCode,
@@ -38,12 +44,12 @@ func (s *friendService) AddFriend(ownerId, friendId primitive.ObjectID) models.R
 		}
 	}
 
-	_, err := s.userRepository.FindById(friendId)
+	friend, err := s.userRepository.FindById(friendId)
 	if err != nil {
 		return models.Response{
 			ErrCode: addNoFoundCode,
-			ErrMsg: addNoFoundMsg,
-			Data: nil,
+			ErrMsg:  addNoFoundMsg,
+			Data:    nil,
 		}
 	}
 
@@ -64,7 +70,12 @@ func (s *friendService) AddFriend(ownerId, friendId primitive.ObjectID) models.R
 	return models.Response{
 		ErrCode: addSuccessCode,
 		ErrMsg:  addSuccessMsg,
-		Data:    nil,
+		Data: models.UserMini{
+			Nickname:  friend.Nickname,
+			Email:     friend.Email,
+			Icon:      friend.Icon,
+			Signature: friend.Signature,
+		},
 	}
 }
 
@@ -74,17 +85,25 @@ func (s *friendService) LoadFriend(ownerId primitive.ObjectID) models.Response {
 	for _, friend := range friends {
 		user, _ := s.userRepository.FindById(friend.FriendId)
 		users = append(users, &models.UserMini{
-			Nickname: user.Nickname,
-			Email: user.Email,
-			Icon: user.Icon,
+			Nickname:  user.Nickname,
+			Email:     user.Email,
+			Icon:      user.Icon,
 			Signature: user.Signature,
 		})
 	}
-
-	return models.Response{
-		ErrCode: 0,
-		ErrMsg:  "成功",
-		Data:    users,
+	log.Println(users)
+	if len(users) == 0 {
+		return models.Response{
+			ErrCode: 1,
+			ErrMsg:  "没有好友",
+			Data:    nil,
+		}
+	} else {
+		return models.Response{
+			ErrCode: 0,
+			ErrMsg:  "成功",
+			Data:    users,
+		}
 	}
 }
 
