@@ -27,6 +27,7 @@ const (
 type UserService interface {
 	Register(user *models.User) models.Response
 	Verify(authentication *models.Authentication) models.Response
+	FindByNickname(nickname string) models.Response
 	isExist(email string) (bool, *models.User)
 }
 
@@ -48,6 +49,33 @@ func (s *userService) isExist(email string) (bool, *models.User) {
 	} else {
 		return false, user
 	}
+}
+
+func (s *userService) FindByNickname(nickname string) models.Response {
+	log.Println("Find:", nickname)
+	users, err := s.r.FindByNickname(nickname)
+	if err != nil {
+		log.Println(err)
+		return models.Response{
+			ErrCode: 1,
+			ErrMsg:  "未知错误",
+			Data:    nil,
+		}
+	}
+	if len(users) == 0 {
+		return models.Response{
+			ErrCode: 2,
+			ErrMsg:  "用户不存在",
+			Data:    nil,
+		}
+	} else {
+		return models.Response{
+			ErrCode: 0,
+			ErrMsg:  "查询成功",
+			Data:    users,
+		}
+	}
+
 }
 
 func (s *userService) Register(user *models.User) models.Response {

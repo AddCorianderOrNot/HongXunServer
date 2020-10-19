@@ -20,3 +20,10 @@ func (c *UserController) Post() {
 	}
 	_, err = c.Ctx.JSON(c.Service.Register(&user))
 }
+
+func (c *UserController) Get()  {
+	_, err := c.Ctx.JSON(c.Service.FindByNickname(c.Ctx.URLParam("nickname")))
+	if err != nil {
+		log.Println(err)
+	}
+}

@@ -12,20 +12,16 @@ import (
 )
 
 type UserRepository interface {
+	Save(user *models.User) error
 	FindByEmail(email string) (*models.User, error)
 	FindById(id primitive.ObjectID) (*models.User, error)
-	Save(user *models.User) error
-	FindAll() ([]*models.User, error)
+	FindByNickname(nickname string) ([]*models.UserMini, error)
+	findAllBy(key string, value interface{}) ([]*models.UserMini, error)
+	findOneBy(key string, value interface{}) (*models.User, error)
 }
 
 type userRepository struct {
 	c *mongo.Collection
-}
-
-func (r *userRepository) FindById(id primitive.ObjectID) (*models.User, error) {
-	var user models.User
-	err := r.c.FindOne(context.TODO(), bson.D{{"_id", id}}).Decode(&user)
-	return &user, err
 }
 
 func (r *userRepository) Save(user *models.User) error {
@@ -33,20 +29,34 @@ func (r *userRepository) Save(user *models.User) error {
 	return err
 }
 
+func (r *userRepository) FindByNickname(nickname string) ([]*models.UserMini, error) {
+	return r.findAllBy("nickname", nickname)
+}
+
+func (r *userRepository) FindById(id primitive.ObjectID) (*models.User, error) {
+	return r.findOneBy("_id", id)
+}
+
 func (r *userRepository) FindByEmail(email string) (*models.User, error) {
+	log.Println("FindByEmail:", email)
+	return r.findOneBy("email", email)
+}
+
+func (r *userRepository) findOneBy(key string, value interface{}) (*models.User, error) {
 	var user models.User
-	err := r.c.FindOne(context.TODO(), bson.D{{"email", email}}).Decode(&user)
+	log.Println(key, value)
+	err := r.c.FindOne(context.TODO(), bson.D{{key, value}}).Decode(&user)
 	return &user, err
 }
 
-func (r *userRepository) FindAll() ([]*models.User, error) {
-	var users []*models.User
-	cur, err := r.c.Find(context.TODO(), bson.D{})
+func (r *userRepository) findAllBy(key string, value interface{}) ([]*models.UserMini, error) {
+	var users []*models.UserMini
+	cur, err := r.c.Find(context.TODO(), bson.D{{key, bson.M{"$regex": value, "$options": "$i"}}})
 	if err != nil {
 		log.Println(err)
 	}
 	for cur.Next(context.TODO()) {
-		var elem models.User
+		var elem models.UserMini
 		_ = cur.Decode(&elem)
 		users = append(users, &elem)
 	}

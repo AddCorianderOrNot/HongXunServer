@@ -13,7 +13,7 @@ type User struct {
 }
 
 type UserMini struct {
-	Nickname  string             `json:"nickName"`
+	Nickname  string             `json:"nickname"`
 	Email     string             `json:"email"`
 	Icon      string             `json:"icon"`
 	Signature string             `json:"signature"`
