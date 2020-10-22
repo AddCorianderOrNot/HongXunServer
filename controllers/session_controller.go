@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"HongXunServer/middleware"
 	"HongXunServer/models"
 	"HongXunServer/services"
 	"github.com/kataras/iris/v12"
@@ -18,6 +19,23 @@ func (c *SessionController) Post() {
 	if err != nil {
 		log.Println(err)
 	}
-	response := c.Service.Verify(&authentication)
-	_, err = c.Ctx.JSON(response)
+	_, err = c.Ctx.JSON(c.Service.Verify(&authentication))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (c *SessionController) Get() {
+	token := c.Ctx.GetHeader("Authorization")
+	log.Println(token)
+	var claims models.UserClaims
+	err := middleware.J.VerifyTokenString(c.Ctx, token[6:], &claims)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("user from:", claims.UserId)
+	_, err = c.Ctx.JSON(c.Service.AutoLogin(claims.UserId))
+	if err != nil {
+		log.Println(err)
+	}
 }

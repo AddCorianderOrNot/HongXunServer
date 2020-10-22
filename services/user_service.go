@@ -27,7 +27,9 @@ const (
 type UserService interface {
 	Register(user *models.User) models.Response
 	Verify(authentication *models.Authentication) models.Response
-	FindByNickname(nickname string) models.Response
+	SearchUser(nickname string) models.Response
+	AutoLogin(id primitive.ObjectID) models.Response
+	UpdateUser(user *models.UserMini) models.Response
 	isExist(email string) (bool, *models.User)
 }
 
@@ -51,7 +53,29 @@ func (s *userService) isExist(email string) (bool, *models.User) {
 	}
 }
 
-func (s *userService) FindByNickname(nickname string) models.Response {
+func (s *userService) AutoLogin(id primitive.ObjectID) models.Response  {
+	userInfo, err := s.r.FindById(id)
+	if err != nil {
+		log.Println(err)
+		return models.Response{
+			ErrCode: 1,
+			ErrMsg: "自动登录失败",
+			Data: nil,
+		}
+	}
+	return models.Response{
+		ErrCode: 0,
+		ErrMsg: "自动登录成功",
+		Data: models.UserMini{
+			Nickname: userInfo.Nickname,
+			Email: userInfo.Email,
+			Icon: userInfo.Icon,
+			Signature: userInfo.Signature,
+		},
+	}
+}
+
+func (s *userService) SearchUser(nickname string) models.Response {
 	log.Println("Find:", nickname)
 	users, err := s.r.FindByNickname(nickname)
 	if err != nil {
