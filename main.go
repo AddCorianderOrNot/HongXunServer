@@ -21,6 +21,7 @@ func main() {
 	mvc.Configure(app.Party("/session"), config.SessionConfigure)
 	mvc.Configure(app.Party("/friend"), config.FriendConfigure)
 	mvc.Configure(app.Party("/message"), config.MessageConfigure)
+	mvc.Configure(app.Party("/image"), config.ImageConfigure)
 
 
 	app.Get("/chat", middleware.Verify, controllers.Chat)

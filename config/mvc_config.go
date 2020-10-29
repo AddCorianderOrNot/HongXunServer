@@ -46,3 +46,7 @@ func UserConfigure(app *mvc.Application) {
 	app.Register(userService)
 	app.Handle(new(controllers.UserController))
 }
+
+func ImageConfigure(app *mvc.Application) {
+	app.Handle(new(controllers.ImageController))
+}

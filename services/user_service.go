@@ -29,7 +29,7 @@ type UserService interface {
 	Verify(authentication *models.Authentication) models.Response
 	SearchUser(nickname string) models.Response
 	AutoLogin(id primitive.ObjectID) models.Response
-	UpdateUser(user *models.UserMini) models.Response
+	UpdateUser(id primitive.ObjectID, key, value string) models.Response
 	isExist(email string) (bool, *models.User)
 }
 
@@ -40,6 +40,28 @@ type userService struct {
 func NewUserService(r repositories.UserRepository) UserService {
 	log.Println("NewUserService")
 	return &userService{r: r}
+}
+
+func (s *userService) UpdateUser(id primitive.ObjectID, key, value string) models.Response {
+	user, err := s.r.Update(id, key, value)
+	if err != nil {
+		log.Println(err)
+		return models.Response{
+			ErrCode: 1,
+			ErrMsg: "用户信息更新失败",
+			Data: nil,
+		}
+	}
+	return models.Response{
+		ErrCode: 0,
+		ErrMsg: "更新成功",
+		Data: models.UserMini{
+			Nickname: user.Nickname,
+			Icon: user.Icon,
+			Signature: user.Signature,
+			Email: user.Email,
+		},
+	}
 }
 
 func (s *userService) isExist(email string) (bool, *models.User) {

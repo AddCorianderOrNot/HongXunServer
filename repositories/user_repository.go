@@ -13,6 +13,7 @@ import (
 
 type UserRepository interface {
 	Save(user *models.User) error
+	Update(id primitive.ObjectID, key, value string) (*models.User, error)
 	FindByEmail(email string) (*models.User, error)
 	FindById(id primitive.ObjectID) (*models.User, error)
 	FindByNickname(nickname string) ([]*models.UserMini, error)
@@ -22,6 +23,13 @@ type UserRepository interface {
 
 type userRepository struct {
 	c *mongo.Collection
+}
+
+func (r *userRepository) Update(id primitive.ObjectID, key, value string) (*models.User, error) {
+	log.Println(key, value)
+	_, err := r.c.UpdateOne(context.TODO(), bson.D{{"_id", id}}, bson.M{"$set": bson.M{key: value}})
+	user, _ := r.FindById(id)
+	return user, err
 }
 
 func (r *userRepository) Save(user *models.User) error {
