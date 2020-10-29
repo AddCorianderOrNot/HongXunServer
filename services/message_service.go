@@ -47,7 +47,7 @@ func (s *messageService) SaveMessage(message models.Message) models.Response {
 	if message.Id.IsZero() {
 		message.Id = primitive.NewObjectID()
 	}
-	message.CreateTime = time.Now()
+	message.CreateTime = time.Now().Unix() * 1e3
 	message.IsViewed = false
 	log.Println("SaveMessage", message)
 	_, err := s.C.InsertOne(context.TODO(), message)

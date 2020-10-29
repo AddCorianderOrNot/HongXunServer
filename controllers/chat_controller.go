@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type ChatController struct {
@@ -36,6 +37,7 @@ func dispatch(userFrom string,data []byte) {
 	err := json.Unmarshal(data, &message)
 	message.UserFrom = userFrom
 	message.UserName = userFrom
+	message.CreateTime = time.Now().Unix() * 1e3
 	log.Println(message)
 	if err != nil {
 		log.Println(err.Error())
