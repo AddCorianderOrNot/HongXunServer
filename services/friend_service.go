@@ -31,6 +31,16 @@ type friendService struct {
 func (s *friendService) AddFriendByEmail(ownerId primitive.ObjectID, friendEmail string) models.Response {
 	log.Println("AddFriendByEmail")
 	friend, _ := s.userRepository.FindByEmail(friendEmail)
+	friends, _ := s.friendRepository.FindAllByOwnerId(ownerId)
+	for _, f := range friends {
+		if friend.Id == f.FriendId {
+			return models.Response{
+				ErrCode: 3,
+				ErrMsg: "请不要重复添加好友",
+				Data: nil,
+			}
+		}
+	}
 	return s.AddFriend(ownerId, friend.Id)
 }
 
