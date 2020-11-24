@@ -45,34 +45,35 @@ func (c *UserController) Patch() {
 			ErrMsg:  "没有权限",
 			Data:    nil,
 		})
-	}
-	log.Println("user from:", claims.UserId)
-	key := c.Ctx.FormValue("key")
-	log.Println("update:", key)
-	if key == "nickname" || key == "signature" {
-		value := c.Ctx.FormValue("value")
-		_, err = c.Ctx.JSON(c.Service.UpdateUser(claims.UserId, key, value))
-		if err != nil {
-			log.Println(err)
-		}
-	} else if key == "image" {
-		f, fh, err := c.Ctx.FormFile("value")
-		if err != nil {
-			log.Println(err)
-		}
-		defer f.Close()
-		uploadDate := strconv.FormatInt(time.Now().Unix(), 10)
-		saveName := utils.Md5(uploadDate + fh.Filename)
-		_, err = c.Ctx.SaveFormFile(fh, filepath.Join("./uploads", saveName))
-		if err != nil {
-			log.Println(err)
-		}
-		_, err = c.Ctx.JSON(c.Service.UpdateUser(claims.UserId, "icon", "http://www.brotherye.site:8080/image/" + saveName))
 	} else {
-		_, _ = c.Ctx.JSON(models.Response{
-			ErrCode: 2,
-			ErrMsg:  "请不要更新不支持的字段",
-			Data:    nil,
-		})
+		log.Println("user from:", claims.UserId)
+		key := c.Ctx.FormValue("key")
+		log.Println("update:", key)
+		if key == "nickname" || key == "signature" {
+			value := c.Ctx.FormValue("value")
+			_, err = c.Ctx.JSON(c.Service.UpdateUser(claims.UserId, key, value))
+			if err != nil {
+				log.Println(err)
+			}
+		} else if key == "image" {
+			f, fh, err := c.Ctx.FormFile("value")
+			if err != nil {
+				log.Println(err)
+			}
+			defer f.Close()
+			uploadDate := strconv.FormatInt(time.Now().Unix(), 10)
+			saveName := uploadDate + utils.Md5(fh.Filename) + ".jpg"
+			_, err = c.Ctx.SaveFormFile(fh, filepath.Join("./uploads", saveName))
+			if err != nil {
+				log.Println(err)
+			}
+			_, err = c.Ctx.JSON(c.Service.UpdateUser(claims.UserId, "icon", "http://www.brotherye.site:8080/image/" + saveName))
+		} else {
+			_, _ = c.Ctx.JSON(models.Response{
+				ErrCode: 2,
+				ErrMsg:  "请不要更新不支持的字段",
+				Data:    nil,
+			})
+		}
 	}
 }

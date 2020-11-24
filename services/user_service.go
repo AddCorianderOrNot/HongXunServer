@@ -4,7 +4,6 @@ import (
 	"HongXunServer/middleware"
 	"HongXunServer/models"
 	"HongXunServer/repositories"
-	"github.com/kataras/iris/v12/middleware/jwt"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"log"
 )
@@ -52,15 +51,11 @@ func (s *userService) UpdateUser(id primitive.ObjectID, key, value string) model
 			Data: nil,
 		}
 	}
+	user.Token = middleware.GenerateToken(user.Nickname, user.Id, user.Email)
 	return models.Response{
 		ErrCode: 0,
 		ErrMsg: "更新成功",
-		Data: models.UserMini{
-			Nickname: user.Nickname,
-			Icon: user.Icon,
-			Signature: user.Signature,
-			Email: user.Email,
-		},
+		Data: user,
 	}
 }
 
@@ -76,7 +71,7 @@ func (s *userService) isExist(email string) (bool, *models.User) {
 }
 
 func (s *userService) AutoLogin(id primitive.ObjectID) models.Response  {
-	userInfo, err := s.r.FindById(id)
+	user, err := s.r.FindById(id)
 	if err != nil {
 		log.Println(err)
 		return models.Response{
@@ -85,15 +80,11 @@ func (s *userService) AutoLogin(id primitive.ObjectID) models.Response  {
 			Data: nil,
 		}
 	}
+	user.Token = middleware.GenerateToken(user.Nickname, user.Id, user.Email)
 	return models.Response{
 		ErrCode: 0,
 		ErrMsg: "自动登录成功",
-		Data: models.UserMini{
-			Nickname: userInfo.Nickname,
-			Email: userInfo.Email,
-			Icon: userInfo.Icon,
-			Signature: userInfo.Signature,
-		},
+		Data: user,
 	}
 }
 
@@ -160,18 +151,7 @@ func (s *userService) Verify(authentication *models.Authentication) models.Respo
 	log.Println(exist, user)
 	if exist {
 		if authentication.Password == user.Password {
-			j := middleware.J
-			log.Println("密码正确")
-			claims := models.UserClaims{
-				Claims: j.Expiry(jwt.Claims{
-					Issuer:   "HongXun",
-					Audience: jwt.Audience{user.Nickname},
-				}),
-				UserId: user.Id,
-				UserEmail: user.Email,
-			}
-			accessToken, _ := j.Token(claims)
-			user.Token = accessToken
+			user.Token = middleware.GenerateToken(user.Nickname, user.Id, user.Email)
 			return models.Response{
 				ErrCode: verifySuccessCode,
 				ErrMsg:  verifySuccessMsg,
