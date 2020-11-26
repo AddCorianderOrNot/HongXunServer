@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"HongXunServer/models"
+	"HongXunServer/utils"
 	"encoding/json"
 	"github.com/gorilla/websocket"
 	"github.com/kataras/iris/v12"
@@ -129,6 +130,7 @@ func recvproc(node *Node) {
 
 //发送消息,发送到消息的管道
 func sendMsg(UserEmail string, msg []byte) {
+	utils.Moderation(msg)
 	rwlocker.RLock()
 	node, ok := clientMap[UserEmail]
 	rwlocker.RUnlock()
