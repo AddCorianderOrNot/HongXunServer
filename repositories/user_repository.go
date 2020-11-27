@@ -52,7 +52,7 @@ func (r *userRepository) FindByEmail(email string) (*models.User, error) {
 
 func (r *userRepository) findOneBy(key string, value interface{}) (*models.User, error) {
 	var user models.User
-	log.Println(key, value)
+	log.Println("findOneBy", key, value)
 	err := r.c.FindOne(context.TODO(), bson.D{{key, value}}).Decode(&user)
 	return &user, err
 }

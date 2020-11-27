@@ -44,3 +44,40 @@ func (c *FriendController) Post() {
 		log.Println(err)
 	}
 }
+
+func (c *FriendController) GetTime() {
+	var claims models.UserClaims
+	err := jwt.ReadClaims(c.Ctx, &claims)
+	if err != nil {
+		log.Println(err)
+	}
+
+	var email models.FriendEmail
+	err = c.Ctx.ReadQuery(&email)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("GetTime", claims.UserId, email.Email)
+	_, err = c.Ctx.JSON(c.Service.GetReadTime(claims.UserId, email.Email))
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func (c *FriendController) PostTime() {
+	var claims models.UserClaims
+	err := jwt.ReadClaims(c.Ctx, &claims)
+	if err != nil {
+		log.Println(err)
+	}
+	var friend models.FriendTime
+	err = c.Ctx.ReadJSON(&friend)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("PostTime", claims.UserId, friend.Email)
+	_, err = c.Ctx.JSON(c.Service.UpdateReadTime(claims.UserId, friend.Email, friend.ReadTime))
+	if err != nil {
+		log.Println(err)
+	}
+}

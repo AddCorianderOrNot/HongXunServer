@@ -13,6 +13,8 @@ import (
 
 type FriendRepository interface {
 	FindAllByOwnerId(ownerId primitive.ObjectID) ([]*models.Friend, error)
+	UpdateTime(ownerId, friendId primitive.ObjectID, time int64) (*models.Friend, error)
+	FindByBothId(ownerId, friendId primitive.ObjectID) (*models.Friend, error)
 	Save(friend *models.Friend) error
 }
 
@@ -38,10 +40,25 @@ func (r *friendRepository) FindAllByOwnerId(ownerId primitive.ObjectID) ([]*mode
 	return friends, err
 }
 
+func (r *friendRepository) UpdateTime(ownerId, friendId primitive.ObjectID, time int64) (*models.Friend, error) {
+	_, err := r.c.UpdateOne(context.TODO(), bson.D{{"owner_id", ownerId}, {"friend_id", friendId}}, bson.M{"$set": bson.M{"read_time": time}})
+	friend, _ := r.FindByBothId(ownerId, friendId)
+	return friend, err
+}
+
 func (r *friendRepository) Save(friend *models.Friend) error {
 	_, err := r.c.InsertOne(context.TODO(), friend)
 	return err
 }
+
+func (r *friendRepository) FindByBothId(ownerId, friendId primitive.ObjectID) (*models.Friend, error) {
+	log.Println("FindByBothId:", ownerId, friendId)
+	var friend models.Friend
+	err := r.c.FindOne(context.TODO(), bson.D{{"owner_id", ownerId}, {"friend_id", friendId}}).Decode(&friend)
+	return &friend, err
+}
+
+
 
 func NewFriendRepository(collection *mongo.Collection) FriendRepository {
 	indexOpt := new(options.IndexOptions)

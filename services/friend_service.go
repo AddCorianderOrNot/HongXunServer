@@ -21,11 +21,49 @@ type FriendService interface {
 	AddFriend(ownerId, friendId primitive.ObjectID) models.Response
 	AddFriendByEmail(ownerId primitive.ObjectID, friendEmail string) models.Response
 	LoadFriend(ownerId primitive.ObjectID) models.Response
+	UpdateReadTime(ownerId primitive.ObjectID, friendEmail string, time int64) models.Response
+	GetReadTime(ownerId primitive.ObjectID, friendEmail string) models.Response
 }
 
 type friendService struct {
 	friendRepository repositories.FriendRepository
 	userRepository   repositories.UserRepository
+}
+
+func (s *friendService) UpdateReadTime(ownerId primitive.ObjectID, friendEmail string, time int64) models.Response {
+	friend, _ := s.userRepository.FindByEmail(friendEmail)
+	_, err := s.friendRepository.UpdateTime(ownerId, friend.Id, time)
+	if err != nil {
+		log.Println(err)
+		return models.Response{
+			ErrCode: 3,
+			ErrMsg:  "更新失败",
+			Data:    nil,
+		}
+	}
+	return models.Response{
+		ErrCode: 0,
+		ErrMsg: "更新成功",
+		Data: nil,
+	}
+}
+
+func (s *friendService) GetReadTime(ownerId primitive.ObjectID, friendEmail string) models.Response {
+	friend, _ := s.userRepository.FindByEmail(friendEmail)
+	result, err := s.friendRepository.FindByBothId(friend.Id, ownerId)
+	if err != nil {
+		log.Println(err)
+		return models.Response{
+			ErrCode: 4,
+			ErrMsg:  "查找失败",
+			Data:    nil,
+		}
+	}
+	return models.Response{
+		ErrCode: 0,
+		ErrMsg: "查找成功",
+		Data: result.ReadTime,
+	}
 }
 
 func (s *friendService) AddFriendByEmail(ownerId primitive.ObjectID, friendEmail string) models.Response {
