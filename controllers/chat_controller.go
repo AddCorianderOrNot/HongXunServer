@@ -39,6 +39,7 @@ func dispatch(userFrom string,data []byte) {
 	message.UserFrom = userFrom
 	message.UserName = userFrom
 	message.CreateTime = time.Now().Unix() * 1e3
+	utils.Moderation(&(message.Content))
 	log.Println(message)
 	if err != nil {
 		log.Println(err.Error())
@@ -130,7 +131,6 @@ func recvproc(node *Node) {
 
 //发送消息,发送到消息的管道
 func sendMsg(UserEmail string, msg []byte) {
-	utils.Moderation(msg)
 	rwlocker.RLock()
 	node, ok := clientMap[UserEmail]
 	rwlocker.RUnlock()

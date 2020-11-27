@@ -3,14 +3,16 @@ package utils
 import (
 	"HongXunServer/auth"
 	"fmt"
-
 	cms "github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/cms/v20190321"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/errors"
 	"github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common/profile"
+	"log"
+	"strings"
+	"unicode/utf8"
 )
 
-func Moderation(text []byte) {
+func Moderation(text *string) {
 
 	credential := common.NewCredential(
 		auth.SecretId,
@@ -22,7 +24,7 @@ func Moderation(text []byte) {
 
 	request := cms.NewTextModerationRequest()
 
-	request.Content = common.StringPtr(Base64(text))
+	request.Content = common.StringPtr(Base64([]byte(*text)))
 
 	response, err := client.TextModeration(request)
 	if _, ok := err.(*errors.TencentCloudSDKError); ok {
@@ -32,5 +34,11 @@ func Moderation(text []byte) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("%s", response.ToJsonString())
+	//fmt.Printf("%s", response.ToJsonString())
+	if *response.Response.Data.Suggestion == "Block" {
+		for _, keyword := range response.Response.Data.Keywords {
+			*text = strings.Replace(*text, *keyword, strings.Repeat("*", utf8.RuneCountInString(*keyword)), -1)
+		}
+	}
+	log.Println(*text)
 }
