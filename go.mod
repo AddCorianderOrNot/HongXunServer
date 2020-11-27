@@ -11,6 +11,7 @@ require (
 	github.com/nats-io/nats-server/v2 v2.1.8 // indirect
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/tencentcloud/tencentcloud-sdk-go v1.0.58
+	github.com/yanyiwu/gojieba v1.1.2
 	github.com/yudai/pp v2.0.1+incompatible // indirect
 	go.mongodb.org/mongo-driver v1.4.1
 )

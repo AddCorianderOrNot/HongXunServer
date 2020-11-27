@@ -2,6 +2,7 @@ package services
 
 import (
 	"HongXunServer/models"
+	"HongXunServer/utils"
 	"context"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -9,12 +10,14 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/x/bsonx"
 	"log"
+	"strings"
 	"time"
 )
 
 type MessageService interface {
 	SaveMessage(message models.Message) models.Response
 	LoadMessage(userTo, userFrom primitive.ObjectID) models.Response
+	GenWordCloud(user string) models.Response
 }
 
 type messageService struct {
@@ -84,5 +87,29 @@ func (s *messageService) LoadMessage(userTo, userFrom primitive.ObjectID) models
 		ErrCode: 0,
 		ErrMsg:  "加载消息成功",
 		Data:    messages,
+	}
+}
+
+func (s *messageService) GenWordCloud(user string) models.Response {
+	var messages []string
+	findOptions := options.Find().SetLimit(100)
+	cur, err := s.C.Find(context.TODO(), bson.D{
+		{"user_from", user},
+	}, findOptions)
+	if err != nil {
+		log.Println(err)
+	}
+	for cur.Next(context.TODO()) {
+		var elem models.Message
+		_ = cur.Decode(&elem)
+		log.Println(elem.Content)
+		messages = append(messages, elem.Content)
+	}
+	log.Println(messages)
+	err = cur.Close(context.TODO())
+	return models.Response{
+		ErrCode: 0,
+		ErrMsg: "Success",
+		Data: utils.WordCount(strings.Join(messages,".")),
 	}
 }

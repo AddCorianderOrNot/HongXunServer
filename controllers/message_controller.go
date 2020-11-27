@@ -46,3 +46,13 @@ func (c *MessageController) Post() {
 		log.Println(err)
 	}
 }
+
+func (c *MessageController) GetWordcloud()  {
+	var claims models.UserClaims
+	err := jwt.ReadClaims(c.Ctx, &claims)
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("user from:", claims.UserEmail)
+	c.Ctx.JSON(c.Service.GenWordCloud(claims.UserEmail))
+}
