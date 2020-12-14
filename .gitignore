@@ -1,1 +1,5 @@
 /.idea/
+/auth/secret.go
+/access.log
+*.exe
+*.jpg
